@@ -460,6 +460,18 @@ button.delete {
   margin-bottom: 20px;
 }
 
+.reminder-indicator {
+  display: none;
+  color: #1f2937;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+  max-width: fit-content;
+}
+
 .dashboard-summary {
   display: grid;
   gap: 14px;

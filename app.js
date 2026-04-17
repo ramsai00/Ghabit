@@ -31,6 +31,7 @@ const todoWeekdays = document.getElementById('todo-weekdays');
 const activityList = document.getElementById('activity-list');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarLegend = document.getElementById('calendar-legend');
+const reminderIndicator = document.getElementById('reminder-indicator');
 const todayList = document.getElementById('today-list');
 const ACTIVITY_STORAGE_KEY = 'ghabit.activity';
 const dashboardSummary = document.getElementById('dashboard-summary');
@@ -654,6 +655,7 @@ function addHabit(title, time) {
   saveData();
   renderLists();
   updateReminderBanner();
+  updateReminderIndicator();
 }
 
 function addTodo(title, dueDate) {
@@ -676,6 +678,7 @@ function addTodo(title, dueDate) {
   addActivity(`Added todo: ${title}`);
   saveData();
   renderLists();
+  updateReminderIndicator();
 }
 
 function toggleComplete(type, id) {
@@ -721,6 +724,7 @@ function toggleComplete(type, id) {
   saveData();
   renderLists();
   updateReminderBanner();
+  updateReminderIndicator();
 }
 
 function removeItem(type, id) {
@@ -736,6 +740,44 @@ function removeItem(type, id) {
   saveData();
   renderLists();
   updateReminderBanner();
+  updateReminderIndicator();
+}
+
+function formatDisplayTime(timeString) {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  if (Number.isNaN(hours)) return timeString;
+  const date = new Date();
+  date.setHours(hours, minutes || 0, 0, 0);
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function getReminderIndicatorText() {
+  const todayHabits = habits.filter((habit) => getHabitStatus(habit) === 'today' && habit.time);
+  if (todayHabits.length > 0) {
+    const nextTime = todayHabits
+      .map((habit) => habit.time)
+      .sort()[0];
+    return nextTime ? `🔔 ${formatDisplayTime(nextTime)}` : '🔔 Today';
+  }
+
+  const todayTodos = todos.filter((todo) => getTodoStatus(todo) === 'today');
+  if (todayTodos.length > 0) {
+    return `🔔 ${todayTodos.length} task${todayTodos.length === 1 ? '' : 's'} today`;
+  }
+
+  return '';
+}
+
+function updateReminderIndicator() {
+  if (!reminderIndicator) return;
+  const text = getReminderIndicatorText();
+  if (!text) {
+    reminderIndicator.textContent = '';
+    reminderIndicator.style.display = 'none';
+    return;
+  }
+  reminderIndicator.textContent = text;
+  reminderIndicator.style.display = 'block';
 }
 
 function updateNotificationStatus() {
@@ -935,6 +977,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderLists();
   updateFailedHabits();
   updateReminderBanner();
+  updateReminderIndicator();
   checkForActiveHabits();
 
   notificationTestButton.addEventListener('click', sendTestNotification);
