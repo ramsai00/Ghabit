@@ -98,6 +98,13 @@ main {
   display: none;
 }
 
+.schedule-day-items {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--text);
+}
+
 .item-form input,
 .item-form button {
   width: 100%;

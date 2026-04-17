@@ -21,10 +21,11 @@ See `CHANGELOG.md` for version history and recent updates.
 
 Then:
 1. Add a habit like "Apply ace cream" and set a time.
-2. Choose whether the habit should repeat every day, on selected days, or only once.
-3. For recurring tasks, set a start date, optional end date, and selected weekdays.
-4. Add a todo like "Visit salon" and choose one-time or recurring schedule.
-5. Mark items complete or delete them.
+2. Choose whether the habit should repeat every day, every X days, on weekends only, on selected days, or only once.
+3. For recurring tasks, set a start date, optional end date, and selected weekdays when needed.
+4. Add a todo like "Visit salon" and choose one-time or recurring schedule with interval and weekend rules.
+5. Use the schedule preview panel to see the next 14 days of scheduled habits and tasks.
+6. Mark items complete or delete them.
 
 ## Notes
 

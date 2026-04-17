@@ -32,10 +32,15 @@
             <span>Recurrence</span>
             <select id="habit-recurrence">
               <option value="daily">Every day</option>
+              <option value="interval">Every X days</option>
+              <option value="weekends">Weekends only</option>
               <option value="weekly">Selected days</option>
               <option value="one-time">One-time</option>
             </select>
           </label>
+          <div id="habit-interval-controls" class="hidden field-row">
+            <label><span>Repeat every</span><input type="number" id="habit-interval-days" min="2" placeholder="Days" /></label>
+          </div>
           <div id="habit-weekdays" class="weekday-picker hidden">
             <label><input type="checkbox" value="Sun" /> Sun</label>
             <label><input type="checkbox" value="Mon" /> Mon</label>
@@ -65,9 +70,14 @@
             <select id="todo-recurrence">
               <option value="one-time">One-time</option>
               <option value="daily">Every day</option>
+              <option value="interval">Every X days</option>
+              <option value="weekends">Weekends only</option>
               <option value="weekly">Selected days</option>
             </select>
           </label>
+          <div id="todo-interval-controls" class="hidden field-row">
+            <label><span>Repeat every</span><input type="number" id="todo-interval-days" min="2" placeholder="Days" /></label>
+          </div>
           <div id="todo-one-time-controls">
             <input type="date" id="todo-date" />
           </div>
@@ -89,6 +99,12 @@
           <button type="submit">Add Todo</button>
         </form>
         <ul id="todo-list" class="item-list"></ul>
+      </section>
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Schedule Preview</h2>
+        </div>
+        <ul id="schedule-list" class="item-list"></ul>
       </section>
     </main>
 

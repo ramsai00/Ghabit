@@ -14,16 +14,21 @@ const habitTitleInput = document.getElementById('habit-title');
 const habitTimeInput = document.getElementById('habit-time');
 const habitRecurrenceSelect = document.getElementById('habit-recurrence');
 const habitWeekdays = document.getElementById('habit-weekdays');
+const habitIntervalControls = document.getElementById('habit-interval-controls');
+const habitIntervalDaysInput = document.getElementById('habit-interval-days');
 const habitStartDateInput = document.getElementById('habit-start-date');
 const habitEndDateInput = document.getElementById('habit-end-date');
 const todoTitleInput = document.getElementById('todo-title');
 const todoDateInput = document.getElementById('todo-date');
 const todoRecurrenceSelect = document.getElementById('todo-recurrence');
+const todoIntervalControls = document.getElementById('todo-interval-controls');
+const todoIntervalDaysInput = document.getElementById('todo-interval-days');
 const todoOneTimeControls = document.getElementById('todo-one-time-controls');
 const todoRecurringControls = document.getElementById('todo-recurring-controls');
 const todoStartDateInput = document.getElementById('todo-start-date');
 const todoEndDateInput = document.getElementById('todo-end-date');
 const todoWeekdays = document.getElementById('todo-weekdays');
+const scheduleList = document.getElementById('schedule-list');
 
 const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -57,6 +62,7 @@ function loadData() {
     ...habit,
     recurrence: habit.recurrence || 'daily',
     days: habit.days || [],
+    intervalDays: habit.intervalDays || 0,
     startDate: habit.startDate || getToday(),
     endDate: habit.endDate || '',
     completed: habit.lastCompletedDate === getToday(),
@@ -69,6 +75,7 @@ function loadData() {
     ...todo,
     recurrence: todo.recurrence || 'one-time',
     days: todo.days || [],
+    intervalDays: todo.intervalDays || 0,
     startDate: todo.startDate || getToday(),
     endDate: todo.endDate || '',
     completed: todo.completed || false,
@@ -96,6 +103,7 @@ function getSelectedWeekdays(container) {
 function updateHabitRecurrenceControls() {
   const recurrence = habitRecurrenceSelect.value;
   habitWeekdays.classList.toggle('hidden', recurrence !== 'weekly');
+  habitIntervalControls.classList.toggle('hidden', recurrence !== 'interval');
 }
 
 function updateTodoRecurrenceControls() {
@@ -104,6 +112,7 @@ function updateTodoRecurrenceControls() {
   todoOneTimeControls.classList.toggle('hidden', !oneTime);
   todoRecurringControls.classList.toggle('hidden', oneTime);
   todoWeekdays.classList.toggle('hidden', recurrence !== 'weekly');
+  todoIntervalControls.classList.toggle('hidden', recurrence !== 'interval');
 }
 
 function isWithinDateRange(item, dateString) {
@@ -132,9 +141,23 @@ function isScheduledOnDate(item, dateString = getToday()) {
     return true;
   }
 
+  if (item.recurrence === 'weekends') {
+    const day = new Date(dateString).getDay();
+    return day === 0 || day === 6;
+  }
+
   if (item.recurrence === 'weekly') {
     const dayName = WEEKDAY_NAMES[new Date(dateString).getDay()];
     return item.days && item.days.includes(dayName);
+  }
+
+  if (item.recurrence === 'interval') {
+    const interval = Number(item.intervalDays) || 0;
+    if (interval < 2) return false;
+    const start = item.startDate ? new Date(item.startDate) : new Date();
+    const date = new Date(dateString);
+    const diff = Math.floor((date - start) / (1000 * 60 * 60 * 24));
+    return diff >= 0 && diff % interval === 0;
   }
 
   return false;
@@ -181,8 +204,14 @@ function getRecurrenceLabel(item) {
   if (item.recurrence === 'daily') {
     return 'Every day';
   }
+  if (item.recurrence === 'weekends') {
+    return 'Weekends only';
+  }
   if (item.recurrence === 'weekly') {
     return item.days && item.days.length > 0 ? `Weekly: ${item.days.join(', ')}` : 'Weekly';
+  }
+  if (item.recurrence === 'interval') {
+    return item.intervalDays ? `Every ${item.intervalDays} days` : 'Every X days';
   }
   return 'One-time';
 }
@@ -279,17 +308,74 @@ function renderLists() {
   } else {
     todos.forEach((todo) => todoList.appendChild(createListItem(todo, 'todo')));
   }
+
+  renderSchedulePreview();
+}
+
+function renderSchedulePreview() {
+  if (!scheduleList) return;
+  scheduleList.innerHTML = '';
+  const today = new Date();
+  const daysToShow = 14;
+
+  for (let i = 0; i < daysToShow; i += 1) {
+    const day = new Date(today);
+    day.setDate(today.getDate() + i);
+    const dateString = day.toISOString().slice(0, 10);
+    const dayName = WEEKDAY_NAMES[day.getDay()];
+
+    const scheduledHabits = habits.filter((habit) => isScheduledOnDate(habit, dateString));
+    const scheduledTodos = todos.filter((todo) => isScheduledOnDate(todo, dateString));
+    if (scheduledHabits.length === 0 && scheduledTodos.length === 0) {
+      const emptyDay = document.createElement('li');
+      emptyDay.className = 'item-card';
+      emptyDay.textContent = `${dayName} ${dateString}: No scheduled items.`;
+      scheduleList.appendChild(emptyDay);
+      continue;
+    }
+
+    const dayCard = document.createElement('li');
+    dayCard.className = 'item-card';
+
+    const header = document.createElement('div');
+    header.className = 'item-row';
+    const title = document.createElement('strong');
+    title.textContent = `${dayName} ${dateString}`;
+    const count = document.createElement('span');
+    count.textContent = `${scheduledHabits.length + scheduledTodos.length} item${scheduledHabits.length + scheduledTodos.length === 1 ? '' : 's'}`;
+    header.append(title, count);
+
+    const list = document.createElement('div');
+    list.className = 'schedule-day-items';
+
+    scheduledHabits.forEach((habit) => {
+      const itemLine = document.createElement('div');
+      itemLine.textContent = `Habit: ${habit.title} (${getRecurrenceLabel(habit)})`;
+      list.appendChild(itemLine);
+    });
+
+    scheduledTodos.forEach((todo) => {
+      const itemLine = document.createElement('div');
+      itemLine.textContent = `Todo: ${todo.title} (${getRecurrenceLabel(todo)})`;
+      list.appendChild(itemLine);
+    });
+
+    dayCard.append(header, list);
+    scheduleList.appendChild(dayCard);
+  }
 }
 
 function addHabit(title, time) {
   const recurrence = habitRecurrenceSelect.value;
   const days = recurrence === 'weekly' ? getSelectedWeekdays(habitWeekdays) : [];
+  const intervalDays = recurrence === 'interval' ? Number(habitIntervalDaysInput.value) : 0;
   const newHabit = {
     id: `h-${Date.now()}`,
     title: title.trim(),
     time,
     recurrence,
     days,
+    intervalDays,
     startDate: habitStartDateInput.value || getToday(),
     endDate: habitEndDateInput.value || '',
     completed: false,
@@ -306,15 +392,17 @@ function addHabit(title, time) {
 function addTodo(title, dueDate) {
   const recurrence = todoRecurrenceSelect.value;
   const days = recurrence === 'weekly' ? getSelectedWeekdays(todoWeekdays) : [];
+  const intervalDays = recurrence === 'interval' ? Number(todoIntervalDaysInput.value) : 0;
   const newTodo = {
     id: `t-${Date.now()}`,
     title: title.trim(),
     recurrence,
     days,
+    intervalDays,
     dueDate: recurrence === 'one-time' ? dueDate || '' : '',
     startDate: recurrence !== 'one-time' ? todoStartDateInput.value || getToday() : getToday(),
     endDate: recurrence !== 'one-time' ? todoEndDateInput.value || '' : '',
-    completed: recurrence === 'one-time' ? false : false,
+    completed: false,
     lastCompletedDate: '',
   };
   todos.push(newTodo);
