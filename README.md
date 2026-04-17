@@ -34,6 +34,21 @@ Then:
 - If the backend is unavailable, the app will fall back to browser `localStorage`.
 - Backend data is stored in `data/ghabit.db`.
 
+## Prevent accidental push to main
+
+This repository includes a local Git hook at `.githooks/pre-push` that rejects direct pushes to `main` or `master`.
+
+To enable it locally:
+
+```bash
+git config core.hooksPath .githooks
+chmod +x .githooks/pre-push
+```
+
+After enabling it, attempting to push directly to `main` will fail with an error in the terminal.
+
+If you also use GitHub, enable branch protection on `main` to block direct pushes on the remote side.
+
 ## Notification notes
 
 - The app uses browser notifications, so the page must be open in a browser tab.
