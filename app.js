@@ -516,18 +516,14 @@ function renderSummary() {
   dashboardSummary.innerHTML = '';
 
   const today = getToday();
-  const todayHabits = habits.filter((habit) => getHabitStatus(habit) === 'today').length;
-  const dueTodos = todos.filter((todo) => getTodoStatus(todo) === 'today').length;
-  const scheduledToday = habits.filter((habit) => isScheduledOnDate(habit, today)).length
-    + todos.filter((todo) => isScheduledOnDate(todo, today)).length;
+  const todayPending = habits.filter((habit) => getHabitStatus(habit) === 'today').length
+    + todos.filter((todo) => getTodoStatus(todo) === 'today').length;
   const completedToday = habits.filter((habit) => habit.lastCompletedDate === today).length
     + todos.filter((todo) => todo.lastCompletedDate === today).length;
 
   const cards = [
-    { label: 'Total habits', value: habits.length, caption: 'Habits tracked' },
-    { label: 'Due today', value: todayHabits, caption: 'Today items' },
-    { label: 'Todos due', value: dueTodos, caption: 'Today tasks' },
-    { label: 'Completed today', value: completedToday, caption: 'Done today' },
+    { label: 'Today pending', value: todayPending, caption: 'Items scheduled for today' },
+    { label: 'Done today', value: completedToday, caption: 'Completed items' },
   ];
 
   cards.forEach((card) => {
