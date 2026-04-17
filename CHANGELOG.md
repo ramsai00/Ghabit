@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-04-18
+### Added
+- Express + SQLite backend persistence.
+- Dashboard summary cards for total habits, active habits, todos due, and completed today.
+- Recent activity log under the todo sidebar.
+- Improved wide-screen layout and better sidebar spacing.
+- Habit progress chart showing recent completion history.
+
 ## [0.1.1] - 2026-04-17
 ### Added
 - Recurrence controls for habits and todos.

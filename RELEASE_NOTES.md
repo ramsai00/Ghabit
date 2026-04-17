@@ -1,5 +1,12 @@
 # Release Notes
 
+## 0.1.2 - 2026-04-18
+- Added Express + SQLite backend persistence.
+- Added dashboard summary metrics for total habits, active tasks, todos due, and completed today.
+- Added recent activity log in the todo sidebar.
+- Improved large-screen layout, todo sidebar spacing, and summary dashboard cards.
+- Added progress chart for habit completion history.
+
 ## 0.1.1 - 2026-04-17
 - Added recurrence controls for habits and todos.
 - Added weekly day selection and start/end date range configuration.

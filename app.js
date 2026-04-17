@@ -28,8 +28,10 @@ const todoRecurringControls = document.getElementById('todo-recurring-controls')
 const todoStartDateInput = document.getElementById('todo-start-date');
 const todoEndDateInput = document.getElementById('todo-end-date');
 const todoWeekdays = document.getElementById('todo-weekdays');
+const activityList = document.getElementById('activity-list');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarLegend = document.getElementById('calendar-legend');
+const ACTIVITY_STORAGE_KEY = 'ghabit.activity';
 const dashboardSummary = document.getElementById('dashboard-summary');
 const EVENT_COLOR_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#ef4444', '#0ea5e9', '#7c3aed'];
 const PROGRESS_DAYS = 7;
@@ -40,6 +42,7 @@ const notificationsSupported = 'Notification' in window;
 let habits = [];
 let todos = [];
 let notifiedActiveHabits = {};
+let activityLog = [];
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
@@ -101,13 +104,44 @@ async function loadData() {
     lastCompletedDate: todo.lastCompletedDate || '',
     history: todo.history || [],
   }));
+
+  activityLog = JSON.parse(localStorage.getItem(ACTIVITY_STORAGE_KEY) || '[]');
 }
 
 function saveData() {
   localStorage.setItem(HABIT_STORAGE_KEY, JSON.stringify(habits));
   localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
   localStorage.setItem(NOTIFIED_STORAGE_KEY, JSON.stringify(notifiedActiveHabits));
+  localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(activityLog));
   syncDataToBackend();
+}
+
+function addActivity(message) {
+  activityLog.unshift({ message, time: new Date().toISOString() });
+  activityLog = activityLog.slice(0, 6);
+}
+
+function renderActivityLog() {
+  if (!activityList) return;
+  activityList.innerHTML = '';
+  if (activityLog.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'activity-item';
+    empty.textContent = 'No recent activity yet.';
+    activityList.appendChild(empty);
+    return;
+  }
+  activityLog.forEach((entry) => {
+    const item = document.createElement('li');
+    item.className = 'activity-item';
+    const line = document.createElement('span');
+    line.textContent = entry.message;
+    const time = document.createElement('time');
+    time.className = 'activity-time';
+    time.textContent = new Date(entry.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    item.append(line, time);
+    activityList.appendChild(item);
+  });
 }
 
 async function syncDataToBackend() {
@@ -412,6 +446,7 @@ function renderLists() {
     todos.forEach((todo) => todoList.appendChild(createListItem(todo, 'todo')));
   }
 
+  renderActivityLog();
   renderCalendar();
 }
 
@@ -558,6 +593,7 @@ function addHabit(title, time) {
     createdDate: getToday(),
   };
   habits.push(newHabit);
+  addActivity(`Added habit: ${title}`);
   saveData();
   renderLists();
   updateReminderBanner();
@@ -580,6 +616,7 @@ function addTodo(title, dueDate) {
     lastCompletedDate: '',
   };
   todos.push(newTodo);
+  addActivity(`Added todo: ${title}`);
   saveData();
   renderLists();
 }
@@ -623,17 +660,22 @@ function toggleComplete(type, id) {
   }
 
   item.history = Array.from(historySet).sort();
+  addActivity(`${item.completed ? 'Completed' : 'Undid'} ${type}: ${item.title}`);
   saveData();
   renderLists();
   updateReminderBanner();
 }
 
 function removeItem(type, id) {
+  let removedItem;
   if (type === 'habit') {
+    removedItem = habits.find((item) => item.id === id);
     habits = habits.filter((item) => item.id !== id);
   } else {
+    removedItem = todos.find((item) => item.id === id);
     todos = todos.filter((item) => item.id !== id);
   }
+  addActivity(`Deleted ${type}: ${removedItem?.title || id}`);
   saveData();
   renderLists();
   updateReminderBanner();
