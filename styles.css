@@ -44,6 +44,7 @@ p {
 main {
   display: grid;
   gap: 24px;
+  align-items: start;
 }
 
 .panel {
@@ -423,5 +424,11 @@ button.delete {
 @media (min-width: 760px) {
   main {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1080px) {
+  main {
+    grid-template-columns: minmax(0, 2fr) minmax(300px, 360px);
   }
 }
