@@ -384,6 +384,24 @@ function createListItem(item, type) {
       : getRecurrenceLabel(item);
   }
 
+  const itemToggle = document.createElement('div');
+  itemToggle.className = 'item-toggle';
+
+  const completeCheckbox = document.createElement('input');
+  completeCheckbox.type = 'checkbox';
+  completeCheckbox.checked = item.completed;
+  completeCheckbox.className = 'item-complete-toggle';
+  completeCheckbox.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleComplete(type, item.id);
+  });
+
+  const checkboxLabel = document.createElement('label');
+  checkboxLabel.textContent = item.completed ? 'Done' : 'Mark done';
+  checkboxLabel.className = 'item-toggle-label';
+
+  itemToggle.append(completeCheckbox, checkboxLabel);
+
   const statusChip = document.createElement('span');
   statusChip.className = getStatusClass(status);
   statusChip.textContent = getStatusLabel(status);
@@ -391,18 +409,22 @@ function createListItem(item, type) {
   const actions = document.createElement('div');
   actions.className = 'item-actions';
 
-  const completeButton = document.createElement('button');
-  completeButton.textContent = item.completed ? 'Undo' : 'Done';
-  completeButton.addEventListener('click', () => toggleComplete(type, item.id));
-
   const deleteButton = document.createElement('button');
   deleteButton.textContent = 'Delete';
   deleteButton.className = 'delete';
-  deleteButton.addEventListener('click', () => removeItem(type, item.id));
+  deleteButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    removeItem(type, item.id);
+  });
 
-  actions.append(completeButton, deleteButton);
-  meta.append(details, statusChip, actions);
+  actions.append(deleteButton);
+  meta.append(details, statusChip, itemToggle, actions);
   listItem.append(title, meta);
+
+  listItem.addEventListener('click', (event) => {
+    if (event.target.closest('.item-actions') || event.target.closest('button')) return;
+    toggleComplete(type, item.id);
+  });
 
   if (type === 'habit') {
     listItem.appendChild(renderProgressChart(item));
