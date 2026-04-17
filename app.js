@@ -234,24 +234,10 @@ function isScheduledOnDate(item, dateString = getToday()) {
 }
 
 function getHabitStatus(habit) {
-  const now = new Date();
   const today = getToday();
-  if (!isScheduledOnDate(habit, today)) return 'inactive';
+  if (!isScheduledOnDate(habit, today)) return 'upcoming';
   if (habit.lastCompletedDate === today) return 'done';
-
-  const habitTime = parseHabitTime(habit);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
-
-  if (now < habitTime) {
-    return 'upcoming';
-  }
-
-  if (now >= habitTime && now <= endOfDay) {
-    return 'active';
-  }
-
-  return 'missed';
+  return 'today';
 }
 
 function getTodoStatus(todo) {
@@ -259,15 +245,15 @@ function getTodoStatus(todo) {
 
   if (todo.recurrence === 'one-time') {
     if (todo.completed) return 'done';
-    if (!todo.dueDate) return 'pending';
+    if (!todo.dueDate) return 'upcoming';
     if (today < todo.dueDate) return 'upcoming';
-    if (today === todo.dueDate) return 'active';
+    if (today === todo.dueDate) return 'today';
     return 'missed';
   }
 
-  if (!isScheduledOnDate(todo, today)) return 'inactive';
+  if (!isScheduledOnDate(todo, today)) return 'upcoming';
   if (todo.lastCompletedDate === today) return 'done';
-  return 'active';
+  return 'today';
 }
 
 function getRecurrenceLabel(item) {
@@ -290,8 +276,9 @@ function getStatusLabel(status) {
   switch (status) {
     case 'done':
       return 'Done';
+    case 'today':
     case 'active':
-      return 'Active';
+      return 'Today';
     case 'upcoming':
       return 'Upcoming';
     case 'missed':
@@ -299,7 +286,7 @@ function getStatusLabel(status) {
     case 'pending':
       return 'Pending';
     case 'inactive':
-      return 'Inactive';
+      return 'Upcoming';
     default:
       return 'Unknown';
   }
@@ -320,7 +307,7 @@ function getHabitProgressData(habit) {
     const scheduled = isScheduledOnDate(habit, dateString);
     const done = habit.history && habit.history.includes(dateString);
     const status = scheduled
-      ? (done ? 'done' : dateString === getToday() ? 'active' : 'missed')
+      ? (done ? 'done' : dateString === getToday() ? 'today' : 'missed')
       : 'inactive';
 
     days.push({ dateString, status });
@@ -355,7 +342,7 @@ function renderProgressChart(item) {
   progress.forEach((day) => {
     const bar = document.createElement('div');
     bar.className = `progress-bar progress-${day.status}`;
-    bar.title = `${day.dateString}: ${day.status === 'done' ? 'Done' : day.status === 'missed' ? 'Missed' : day.status === 'active' ? 'Today' : 'Not scheduled'}`;
+    bar.title = `${day.dateString}: ${day.status === 'done' ? 'Done' : day.status === 'missed' ? 'Missed' : day.status === 'today' || day.status === 'active' ? 'Today' : 'Not scheduled'}`;
     bars.appendChild(bar);
   });
 
@@ -455,8 +442,8 @@ function renderSummary() {
   dashboardSummary.innerHTML = '';
 
   const today = getToday();
-  const activeHabits = habits.filter((habit) => getHabitStatus(habit) === 'active').length;
-  const dueTodos = todos.filter((todo) => getTodoStatus(todo) === 'active').length;
+  const todayHabits = habits.filter((habit) => getHabitStatus(habit) === 'today').length;
+  const dueTodos = todos.filter((todo) => getTodoStatus(todo) === 'today').length;
   const scheduledToday = habits.filter((habit) => isScheduledOnDate(habit, today)).length
     + todos.filter((todo) => isScheduledOnDate(todo, today)).length;
   const completedToday = habits.filter((habit) => habit.lastCompletedDate === today).length
@@ -464,9 +451,9 @@ function renderSummary() {
 
   const cards = [
     { label: 'Total habits', value: habits.length, caption: 'Habits tracked' },
-    { label: 'Active now', value: activeHabits, caption: 'Habits due today' },
-    { label: 'Todos due', value: dueTodos, caption: 'Tasks due today' },
-    { label: 'Completed today', value: completedToday, caption: 'Today marked done' },
+    { label: 'Due today', value: todayHabits, caption: 'Today items' },
+    { label: 'Todos due', value: dueTodos, caption: 'Today tasks' },
+    { label: 'Completed today', value: completedToday, caption: 'Done today' },
   ];
 
   cards.forEach((card) => {
@@ -688,7 +675,7 @@ function updateNotificationStatus() {
   }
 
   if (Notification.permission === 'granted') {
-    notificationStatus.textContent = 'Notifications enabled. You will receive habit reminders when a habit becomes active.';
+    notificationStatus.textContent = 'Notifications enabled. You will receive habit reminders when a habit is scheduled for today.';
   } else if (Notification.permission === 'denied') {
     notificationStatus.textContent = 'Notifications denied. Enable browser notifications in your browser settings to receive reminders.';
   } else {
@@ -780,13 +767,13 @@ function checkForActiveHabits() {
     askNotificationPermission();
   }
   const today = getToday();
-  const activeHabits = habits.filter((habit) => getHabitStatus(habit) === 'active');
+  const todayHabits = habits.filter((habit) => getHabitStatus(habit) === 'today');
 
-  activeHabits.forEach((habit) => {
+  todayHabits.forEach((habit) => {
     const notifyKey = `${habit.id}-${today}`;
     if (!notifiedActiveHabits[notifyKey]) {
       sendBrowserNotification('Habit Reminder', `Time to do: ${habit.title}`);
-      showLocalAlert(`Habit active: ${habit.title}. Mark it done when complete.`);
+      showLocalAlert(`Habit scheduled for today: ${habit.title}. Mark it done when complete.`);
       notifiedActiveHabits[notifyKey] = true;
     }
   });
@@ -796,19 +783,19 @@ function checkForActiveHabits() {
 }
 
 function updateReminderBanner() {
-  const activeHabits = habits.filter((habit) => getHabitStatus(habit) === 'active');
+  const todayHabits = habits.filter((habit) => getHabitStatus(habit) === 'today');
   const missedYesterday = habits.filter((habit) => habit.lastFailedDate === getYesterday());
 
-  if (activeHabits.length === 0 && missedYesterday.length === 0) {
+  if (todayHabits.length === 0 && missedYesterday.length === 0) {
     reminderBanner.textContent = '';
     reminderBanner.style.display = 'none';
     return;
   }
 
   const parts = [];
-  if (activeHabits.length > 0) {
-    const activeText = activeHabits.map((habit) => habit.title).join(', ');
-    parts.push(`Reminder: ${activeText} ${activeHabits.length === 1 ? 'is' : 'are'} active now.`);
+  if (todayHabits.length > 0) {
+    const activeText = todayHabits.map((habit) => habit.title).join(', ');
+    parts.push(`Reminder: ${activeText} ${todayHabits.length === 1 ? 'is' : 'are'} scheduled for today.`);
   }
 
   if (missedYesterday.length > 0) {
