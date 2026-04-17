@@ -153,6 +153,20 @@ button.delete {
   margin-bottom: 20px;
 }
 
+.local-alert {
+  background: #fef9c3;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: none;
+  font-size: 0.95rem;
+}
+
+.local-alert.show {
+  display: block;
+}
+
 .small-button {
   border: 1px solid var(--border);
   border-radius: 10px;

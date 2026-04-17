@@ -9,6 +9,7 @@ const todoList = document.getElementById('todo-list');
 const reminderBanner = document.getElementById('reminder-banner');
 const notificationStatus = document.getElementById('notification-status');
 const notificationTestButton = document.getElementById('notification-test-button');
+const localAlert = document.getElementById('local-alert');
 const habitTitleInput = document.getElementById('habit-title');
 const habitTimeInput = document.getElementById('habit-time');
 const todoTitleInput = document.getElementById('todo-title');
@@ -289,16 +290,30 @@ function sendBrowserNotification(title, body) {
   }
 
   try {
-    new Notification(title, { body, silent: false });
+    console.log('Ghabit notification:', title, body);
+    new Notification(title, { body, silent: false, requireInteraction: true });
     notificationStatus.textContent = 'Test notification sent. Check your OS/browser notification area.';
+    showLocalAlert('Notification attempted. If your browser blocks popups, this reminder will still show here.');
   } catch (error) {
     notificationStatus.textContent = `Notification failed: ${error.message}`;
+    showLocalAlert(`Notification failed: ${error.message}`);
   }
+}
+
+function showLocalAlert(message) {
+  if (!localAlert) return;
+  localAlert.textContent = message;
+  localAlert.classList.add('show');
+  window.clearTimeout(showLocalAlert.hideTimer);
+  showLocalAlert.hideTimer = window.setTimeout(() => {
+    localAlert.classList.remove('show');
+  }, 8000);
 }
 
 function sendTestNotification() {
   if (!notificationsSupported) {
     notificationStatus.textContent = 'Notifications are not supported by this browser.';
+    showLocalAlert('Notifications not supported. Reminders will appear inside the app.');
     return;
   }
 
@@ -323,6 +338,7 @@ function checkForActiveHabits() {
     const notifyKey = `${habit.id}-${today}`;
     if (!notifiedActiveHabits[notifyKey]) {
       sendBrowserNotification('Habit Reminder', `Time to do: ${habit.title}`);
+      showLocalAlert(`Habit active: ${habit.title}. Mark it done when complete.`);
       notifiedActiveHabits[notifyKey] = true;
     }
   });

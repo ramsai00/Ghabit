@@ -1,6 +1,10 @@
 # Ghabit Tracker
 
+Version: `0.1.0`
+
 A minimal web-based habit tracker that supports recurring habits and one-time todo tasks.
+
+See `CHANGELOG.md` for version history and recent updates.
 
 ## How to use
 
@@ -24,3 +28,10 @@ Then:
 
 - Data is stored locally in your browser using `localStorage`.
 - This is a simple first version meant for easy iteration later.
+
+## Notification notes
+
+- The app uses browser notifications, so the page must be open in a browser tab.
+- Run from `http://localhost:8000` or HTTPS, not `file://`.
+- On macOS, also verify browser notifications are allowed in System Settings and that Focus / Do Not Disturb is off.
+- Use the "Test notification" button in the app to confirm the browser can show notifications.
