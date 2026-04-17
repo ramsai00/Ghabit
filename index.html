@@ -28,6 +28,27 @@
         <form id="habit-form" class="item-form">
           <input type="text" id="habit-title" placeholder="Habit name (e.g. apply ace cream)" required />
           <input type="time" id="habit-time" required />
+          <label class="field-row">
+            <span>Recurrence</span>
+            <select id="habit-recurrence">
+              <option value="daily">Every day</option>
+              <option value="weekly">Selected days</option>
+              <option value="one-time">One-time</option>
+            </select>
+          </label>
+          <div id="habit-weekdays" class="weekday-picker hidden">
+            <label><input type="checkbox" value="Sun" /> Sun</label>
+            <label><input type="checkbox" value="Mon" /> Mon</label>
+            <label><input type="checkbox" value="Tue" /> Tue</label>
+            <label><input type="checkbox" value="Wed" /> Wed</label>
+            <label><input type="checkbox" value="Thu" /> Thu</label>
+            <label><input type="checkbox" value="Fri" /> Fri</label>
+            <label><input type="checkbox" value="Sat" /> Sat</label>
+          </div>
+          <div class="date-row">
+            <input type="date" id="habit-start-date" />
+            <input type="date" id="habit-end-date" />
+          </div>
           <button type="submit">Add Habit</button>
         </form>
         <ul id="habit-list" class="item-list"></ul>
@@ -39,7 +60,32 @@
         </div>
         <form id="todo-form" class="item-form">
           <input type="text" id="todo-title" placeholder="Task name (e.g. visit salon)" required />
-          <input type="date" id="todo-date" />
+          <label class="field-row">
+            <span>Recurrence</span>
+            <select id="todo-recurrence">
+              <option value="one-time">One-time</option>
+              <option value="daily">Every day</option>
+              <option value="weekly">Selected days</option>
+            </select>
+          </label>
+          <div id="todo-one-time-controls">
+            <input type="date" id="todo-date" />
+          </div>
+          <div id="todo-recurring-controls" class="hidden">
+            <div class="date-row">
+              <input type="date" id="todo-start-date" />
+              <input type="date" id="todo-end-date" />
+            </div>
+            <div id="todo-weekdays" class="weekday-picker hidden">
+              <label><input type="checkbox" value="Sun" /> Sun</label>
+              <label><input type="checkbox" value="Mon" /> Mon</label>
+              <label><input type="checkbox" value="Tue" /> Tue</label>
+              <label><input type="checkbox" value="Wed" /> Wed</label>
+              <label><input type="checkbox" value="Thu" /> Thu</label>
+              <label><input type="checkbox" value="Fri" /> Fri</label>
+              <label><input type="checkbox" value="Sat" /> Sat</label>
+            </div>
+          </div>
           <button type="submit">Add Todo</button>
         </form>
         <ul id="todo-list" class="item-list"></ul>

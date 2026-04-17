@@ -12,8 +12,20 @@ const notificationTestButton = document.getElementById('notification-test-button
 const localAlert = document.getElementById('local-alert');
 const habitTitleInput = document.getElementById('habit-title');
 const habitTimeInput = document.getElementById('habit-time');
+const habitRecurrenceSelect = document.getElementById('habit-recurrence');
+const habitWeekdays = document.getElementById('habit-weekdays');
+const habitStartDateInput = document.getElementById('habit-start-date');
+const habitEndDateInput = document.getElementById('habit-end-date');
 const todoTitleInput = document.getElementById('todo-title');
 const todoDateInput = document.getElementById('todo-date');
+const todoRecurrenceSelect = document.getElementById('todo-recurrence');
+const todoOneTimeControls = document.getElementById('todo-one-time-controls');
+const todoRecurringControls = document.getElementById('todo-recurring-controls');
+const todoStartDateInput = document.getElementById('todo-start-date');
+const todoEndDateInput = document.getElementById('todo-end-date');
+const todoWeekdays = document.getElementById('todo-weekdays');
+
+const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const notificationsSupported = 'Notification' in window;
 let habits = [];
@@ -43,10 +55,24 @@ function loadData() {
 
   habits = habits.map((habit) => ({
     ...habit,
+    recurrence: habit.recurrence || 'daily',
+    days: habit.days || [],
+    startDate: habit.startDate || getToday(),
+    endDate: habit.endDate || '',
     completed: habit.lastCompletedDate === getToday(),
     lastCompletedDate: habit.lastCompletedDate || '',
     lastFailedDate: habit.lastFailedDate || '',
     createdDate: habit.createdDate || getToday(),
+  }));
+
+  todos = todos.map((todo) => ({
+    ...todo,
+    recurrence: todo.recurrence || 'one-time',
+    days: todo.days || [],
+    startDate: todo.startDate || getToday(),
+    endDate: todo.endDate || '',
+    completed: todo.completed || false,
+    lastCompletedDate: todo.lastCompletedDate || '',
   }));
 }
 
@@ -63,9 +89,61 @@ function parseHabitTime(habit) {
   return time;
 }
 
+function getSelectedWeekdays(container) {
+  return Array.from(container.querySelectorAll('input[type=checkbox]:checked')).map((input) => input.value);
+}
+
+function updateHabitRecurrenceControls() {
+  const recurrence = habitRecurrenceSelect.value;
+  habitWeekdays.classList.toggle('hidden', recurrence !== 'weekly');
+}
+
+function updateTodoRecurrenceControls() {
+  const recurrence = todoRecurrenceSelect.value;
+  const oneTime = recurrence === 'one-time';
+  todoOneTimeControls.classList.toggle('hidden', !oneTime);
+  todoRecurringControls.classList.toggle('hidden', oneTime);
+  todoWeekdays.classList.toggle('hidden', recurrence !== 'weekly');
+}
+
+function isWithinDateRange(item, dateString) {
+  const date = new Date(dateString);
+  const start = item.startDate ? new Date(item.startDate) : null;
+  const end = item.endDate ? new Date(item.endDate) : null;
+
+  if (start && date < start) return false;
+  if (end && date > end) return false;
+  return true;
+}
+
+function isScheduledOnDate(item, dateString = getToday()) {
+  if (item.recurrence === 'one-time') {
+    if (item.dueDate) {
+      return item.dueDate === dateString;
+    }
+    return item.startDate === dateString;
+  }
+
+  if (!isWithinDateRange(item, dateString)) {
+    return false;
+  }
+
+  if (item.recurrence === 'daily') {
+    return true;
+  }
+
+  if (item.recurrence === 'weekly') {
+    const dayName = WEEKDAY_NAMES[new Date(dateString).getDay()];
+    return item.days && item.days.includes(dayName);
+  }
+
+  return false;
+}
+
 function getHabitStatus(habit) {
   const now = new Date();
   const today = getToday();
+  if (!isScheduledOnDate(habit, today)) return 'inactive';
   if (habit.lastCompletedDate === today) return 'done';
 
   const habitTime = parseHabitTime(habit);
@@ -83,6 +161,32 @@ function getHabitStatus(habit) {
   return 'missed';
 }
 
+function getTodoStatus(todo) {
+  const today = getToday();
+
+  if (todo.recurrence === 'one-time') {
+    if (todo.completed) return 'done';
+    if (!todo.dueDate) return 'pending';
+    if (today < todo.dueDate) return 'upcoming';
+    if (today === todo.dueDate) return 'active';
+    return 'missed';
+  }
+
+  if (!isScheduledOnDate(todo, today)) return 'inactive';
+  if (todo.lastCompletedDate === today) return 'done';
+  return 'active';
+}
+
+function getRecurrenceLabel(item) {
+  if (item.recurrence === 'daily') {
+    return 'Every day';
+  }
+  if (item.recurrence === 'weekly') {
+    return item.days && item.days.length > 0 ? `Weekly: ${item.days.join(', ')}` : 'Weekly';
+  }
+  return 'One-time';
+}
+
 function getStatusLabel(status) {
   switch (status) {
     case 'done':
@@ -95,6 +199,8 @@ function getStatusLabel(status) {
       return 'Missed';
     case 'pending':
       return 'Pending';
+    case 'inactive':
+      return 'Inactive';
     default:
       return 'Unknown';
   }
@@ -112,7 +218,7 @@ function createListItem(item, type) {
   title.className = 'item-title';
   title.textContent = item.title;
 
-  const status = type === 'habit' ? getHabitStatus(item) : item.completed ? 'done' : 'pending';
+  const status = type === 'habit' ? getHabitStatus(item) : getTodoStatus(item);
   if (status === 'done') {
     title.classList.add('complete');
   }
@@ -122,9 +228,11 @@ function createListItem(item, type) {
 
   const details = document.createElement('span');
   if (type === 'habit') {
-    details.textContent = `Time: ${item.time}`;
+    details.textContent = `${getRecurrenceLabel(item)} | Time: ${item.time}`;
   } else {
-    details.textContent = item.dueDate ? `Due: ${item.dueDate}` : 'No due date';
+    details.textContent = item.recurrence === 'one-time'
+      ? item.dueDate ? `Due: ${item.dueDate}` : 'No due date'
+      : getRecurrenceLabel(item);
   }
 
   const statusChip = document.createElement('span');
@@ -174,10 +282,16 @@ function renderLists() {
 }
 
 function addHabit(title, time) {
+  const recurrence = habitRecurrenceSelect.value;
+  const days = recurrence === 'weekly' ? getSelectedWeekdays(habitWeekdays) : [];
   const newHabit = {
     id: `h-${Date.now()}`,
     title: title.trim(),
     time,
+    recurrence,
+    days,
+    startDate: habitStartDateInput.value || getToday(),
+    endDate: habitEndDateInput.value || '',
     completed: false,
     lastCompletedDate: '',
     lastFailedDate: '',
@@ -190,11 +304,18 @@ function addHabit(title, time) {
 }
 
 function addTodo(title, dueDate) {
+  const recurrence = todoRecurrenceSelect.value;
+  const days = recurrence === 'weekly' ? getSelectedWeekdays(todoWeekdays) : [];
   const newTodo = {
     id: `t-${Date.now()}`,
     title: title.trim(),
-    dueDate: dueDate || '',
-    completed: false,
+    recurrence,
+    days,
+    dueDate: recurrence === 'one-time' ? dueDate || '' : '',
+    startDate: recurrence !== 'one-time' ? todoStartDateInput.value || getToday() : getToday(),
+    endDate: recurrence !== 'one-time' ? todoEndDateInput.value || '' : '',
+    completed: recurrence === 'one-time' ? false : false,
+    lastCompletedDate: '',
   };
   todos.push(newTodo);
   saveData();
@@ -214,7 +335,13 @@ function toggleComplete(type, id) {
       item.lastFailedDate = '';
     }
   } else {
-    item.completed = !item.completed;
+    const today = getToday();
+    if (item.recurrence === 'one-time') {
+      item.completed = !item.completed;
+    } else {
+      item.lastCompletedDate = item.lastCompletedDate === today ? '' : today;
+      item.completed = item.lastCompletedDate === today;
+    }
   }
 
   saveData();
@@ -402,16 +529,26 @@ habitForm.addEventListener('submit', (event) => {
   addHabit(title, time);
   habitTitleInput.value = '';
   habitTimeInput.value = '';
+  habitStartDateInput.value = '';
+  habitEndDateInput.value = '';
+  habitRecurrenceSelect.value = 'daily';
+  updateHabitRecurrenceControls();
 });
 
 todoForm.addEventListener('submit', (event) => {
   event.preventDefault();
   const title = todoTitleInput.value;
   const dueDate = todoDateInput.value;
+  const recurrence = todoRecurrenceSelect.value;
   if (!title) return;
+  if (recurrence === 'one-time' && !dueDate) return;
   addTodo(title, dueDate);
   todoTitleInput.value = '';
   todoDateInput.value = '';
+  todoStartDateInput.value = '';
+  todoEndDateInput.value = '';
+  todoRecurrenceSelect.value = 'one-time';
+  updateTodoRecurrenceControls();
 });
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -423,6 +560,11 @@ window.addEventListener('DOMContentLoaded', () => {
   checkForActiveHabits();
 
   notificationTestButton.addEventListener('click', sendTestNotification);
+  habitRecurrenceSelect.addEventListener('change', updateHabitRecurrenceControls);
+  todoRecurrenceSelect.addEventListener('change', updateTodoRecurrenceControls);
+
+  updateHabitRecurrenceControls();
+  updateTodoRecurrenceControls();
 
   setInterval(() => {
     renderLists();

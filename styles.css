@@ -63,6 +63,41 @@ main {
   margin-bottom: 16px;
 }
 
+.field-row {
+  display: grid;
+  gap: 8px;
+}
+
+.field-row span {
+  font-size: 0.95rem;
+  display: block;
+  color: var(--muted);
+}
+
+.date-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.weekday-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weekday-picker label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.hidden {
+  display: none;
+}
+
 .item-form input,
 .item-form button {
   width: 100%;
@@ -214,6 +249,11 @@ button.delete {
 .status-pending {
   background: #fef3c7;
   color: #92400e;
+}
+
+.status-inactive {
+  background: #f3f4f6;
+  color: #475569;
 }
 
 .item-title {

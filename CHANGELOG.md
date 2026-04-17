@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-04-17
+### Added
+- Recurrence controls for habits and todos.
+- Weekly day selection and start/end date range configuration.
+- One-time habits and todos with due date support.
+- Schedule-aware status labels for recurring tasks.
+
 ## [0.1.0] - 2026-04-17
 ### Added
 - Initial habit tracker UI with recurring habits and one-time todos.
