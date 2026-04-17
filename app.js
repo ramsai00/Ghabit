@@ -31,6 +31,7 @@ const todoWeekdays = document.getElementById('todo-weekdays');
 const activityList = document.getElementById('activity-list');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarLegend = document.getElementById('calendar-legend');
+const todayList = document.getElementById('today-list');
 const ACTIVITY_STORAGE_KEY = 'ghabit.activity';
 const dashboardSummary = document.getElementById('dashboard-summary');
 const EVENT_COLOR_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#ef4444', '#0ea5e9', '#7c3aed'];
@@ -433,8 +434,44 @@ function renderLists() {
     todos.forEach((todo) => todoList.appendChild(createListItem(todo, 'todo')));
   }
 
+  renderTodayList();
   renderActivityLog();
   renderCalendar();
+}
+
+function getTodayItems() {
+  const today = getToday();
+  return [
+    ...habits.map((item) => ({ ...item, type: 'habit' })),
+    ...todos.map((item) => ({ ...item, type: 'todo' })),
+  ].filter((item) => {
+    const status = item.type === 'habit' ? getHabitStatus(item) : getTodoStatus(item);
+    return status === 'today' || status === 'done';
+  }).sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'habit' ? -1 : 1;
+    if (a.type === 'habit') return a.time.localeCompare(b.time);
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    return 0;
+  });
+}
+
+function renderTodayList() {
+  if (!todayList) return;
+  todayList.innerHTML = '';
+
+  const todayItems = getTodayItems();
+  if (todayItems.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'item-card';
+    empty.textContent = 'No items scheduled for today.';
+    todayList.appendChild(empty);
+    return;
+  }
+
+  todayItems.forEach((item) => {
+    const listItem = createListItem(item, item.type);
+    todayList.appendChild(listItem);
+  });
 }
 
 function renderSummary() {
