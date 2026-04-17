@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS habits (
   completed INTEGER,
   lastCompletedDate TEXT,
   lastFailedDate TEXT,
-  createdDate TEXT
+  createdDate TEXT,
+  history TEXT
 );
 CREATE TABLE IF NOT EXISTS todos (
   id TEXT PRIMARY KEY,
@@ -44,7 +45,8 @@ CREATE TABLE IF NOT EXISTS todos (
   startDate TEXT,
   endDate TEXT,
   completed INTEGER,
-  lastCompletedDate TEXT
+  lastCompletedDate TEXT,
+  history TEXT
 );
 `;
 
@@ -53,7 +55,24 @@ db.exec(initSql, (error) => {
     console.error('Database initialization failed:', error.message);
     process.exit(1);
   }
+  ensureHistoryColumns();
 });
+
+function ensureHistoryColumns() {
+  db.serialize(() => {
+    db.all("PRAGMA table_info(habits)", (error, columns) => {
+      if (!error && !columns.some((column) => column.name === 'history')) {
+        db.run("ALTER TABLE habits ADD COLUMN history TEXT DEFAULT '[]'");
+      }
+    });
+
+    db.all("PRAGMA table_info(todos)", (error, columns) => {
+      if (!error && !columns.some((column) => column.name === 'history')) {
+        db.run("ALTER TABLE todos ADD COLUMN history TEXT DEFAULT '[]'");
+      }
+    });
+  });
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
@@ -75,6 +94,7 @@ app.get('/api/data', (req, res) => {
           days: row.days ? JSON.parse(row.days) : [],
           intervalDays: row.intervalDays || 0,
           completed: Boolean(row.completed),
+          history: row.history ? JSON.parse(row.history) : [],
         });
 
         res.json({
@@ -102,8 +122,8 @@ app.post('/api/sync', (req, res) => {
       INSERT INTO habits (
         id, title, time, recurrence, days, intervalDays,
         startDate, endDate, completed, lastCompletedDate,
-        lastFailedDate, createdDate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        lastFailedDate, createdDate, history
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     habits.forEach((habit) => {
@@ -119,7 +139,8 @@ app.post('/api/sync', (req, res) => {
         habit.completed ? 1 : 0,
         habit.lastCompletedDate || '',
         habit.lastFailedDate || '',
-        habit.createdDate || ''
+        habit.createdDate || '',
+        JSON.stringify(habit.history || [])
       );
     });
 
@@ -128,8 +149,8 @@ app.post('/api/sync', (req, res) => {
     const todoStmt = db.prepare(`
       INSERT INTO todos (
         id, title, recurrence, days, intervalDays,
-        dueDate, startDate, endDate, completed, lastCompletedDate
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        dueDate, startDate, endDate, completed, lastCompletedDate, history
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     todos.forEach((todo) => {
@@ -143,7 +164,8 @@ app.post('/api/sync', (req, res) => {
         todo.startDate || '',
         todo.endDate || '',
         todo.completed ? 1 : 0,
-        todo.lastCompletedDate || ''
+        todo.lastCompletedDate || '',
+        JSON.stringify(todo.history || [])
       );
     });
 

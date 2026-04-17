@@ -31,6 +31,7 @@ const todoWeekdays = document.getElementById('todo-weekdays');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarLegend = document.getElementById('calendar-legend');
 const EVENT_COLOR_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#ef4444', '#0ea5e9', '#7c3aed'];
+const PROGRESS_DAYS = 7;
 
 const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -85,6 +86,7 @@ async function loadData() {
     lastCompletedDate: habit.lastCompletedDate || '',
     lastFailedDate: habit.lastFailedDate || '',
     createdDate: habit.createdDate || getToday(),
+    history: habit.history || [],
   }));
 
   todos = todos.map((todo) => ({
@@ -96,6 +98,7 @@ async function loadData() {
     endDate: todo.endDate || '',
     completed: todo.completed || false,
     lastCompletedDate: todo.lastCompletedDate || '',
+    history: todo.history || [],
   }));
 }
 
@@ -271,6 +274,68 @@ function getStatusClass(status) {
   return `status-chip status-${status}`;
 }
 
+function getHabitProgressData(habit) {
+  const today = new Date();
+  const days = [];
+
+  for (let i = PROGRESS_DAYS - 1; i >= 0; i -= 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const dateString = date.toISOString().slice(0, 10);
+    const scheduled = isScheduledOnDate(habit, dateString);
+    const done = habit.history && habit.history.includes(dateString);
+    const status = scheduled
+      ? (done ? 'done' : dateString === getToday() ? 'active' : 'missed')
+      : 'inactive';
+
+    days.push({ dateString, status });
+  }
+
+  return days;
+}
+
+function renderProgressChart(item) {
+  const historySet = new Set(item.history || []);
+  const progress = getHabitProgressData(item);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'progress-chart';
+
+  const title = document.createElement('div');
+  title.className = 'progress-chart-title';
+  title.textContent = 'Recent completion';
+  wrapper.appendChild(title);
+
+  const labels = document.createElement('div');
+  labels.className = 'progress-day-labels';
+  progress.forEach((day) => {
+    const label = document.createElement('span');
+    label.className = 'progress-day-label';
+    label.textContent = new Date(day.dateString).toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2);
+    labels.appendChild(label);
+  });
+
+  const bars = document.createElement('div');
+  bars.className = 'progress-bars';
+
+  progress.forEach((day) => {
+    const bar = document.createElement('div');
+    bar.className = `progress-bar progress-${day.status}`;
+    bar.title = `${day.dateString}: ${day.status === 'done' ? 'Done' : day.status === 'missed' ? 'Missed' : day.status === 'active' ? 'Today' : 'Not scheduled'}`;
+    bars.appendChild(bar);
+  });
+
+  const stats = document.createElement('div');
+  stats.className = 'progress-summary';
+  const doneCount = progress.filter((day) => day.status === 'done').length;
+  const scheduledCount = progress.filter((day) => day.status !== 'inactive').length;
+  stats.textContent = scheduledCount > 0
+    ? `Completed ${doneCount}/${scheduledCount} scheduled days`
+    : 'Not scheduled in the last week';
+
+  wrapper.append(labels, bars, stats);
+  return wrapper;
+}
+
 function createListItem(item, type) {
   const listItem = document.createElement('li');
   listItem.className = 'item-card';
@@ -315,6 +380,10 @@ function createListItem(item, type) {
   actions.append(completeButton, deleteButton);
   meta.append(details, statusChip, actions);
   listItem.append(title, meta);
+
+  if (type === 'habit') {
+    listItem.appendChild(renderProgressChart(item));
+  }
 
   return listItem;
 }
@@ -485,23 +554,40 @@ function toggleComplete(type, id) {
   const item = list.find((entry) => entry.id === id);
   if (!item) return;
 
+  const today = getToday();
+  item.history = item.history || [];
+  const historySet = new Set(item.history);
+
   if (type === 'habit') {
-    const today = getToday();
     item.completed = !item.completed;
     item.lastCompletedDate = item.completed ? today : '';
-    if (!item.completed) {
+    if (item.completed) {
+      historySet.add(today);
+    } else {
+      historySet.delete(today);
       item.lastFailedDate = '';
     }
   } else {
-    const today = getToday();
     if (item.recurrence === 'one-time') {
       item.completed = !item.completed;
+      if (item.completed) {
+        historySet.add(today);
+      } else {
+        historySet.delete(today);
+      }
     } else {
-      item.lastCompletedDate = item.lastCompletedDate === today ? '' : today;
-      item.completed = item.lastCompletedDate === today;
+      const toggledOn = item.lastCompletedDate !== today;
+      item.lastCompletedDate = toggledOn ? today : '';
+      item.completed = toggledOn;
+      if (toggledOn) {
+        historySet.add(today);
+      } else {
+        historySet.delete(today);
+      }
     }
   }
 
+  item.history = Array.from(historySet).sort();
   saveData();
   renderLists();
   updateReminderBanner();
