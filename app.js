@@ -363,51 +363,65 @@ function createListItem(item, type) {
   const listItem = document.createElement('li');
   listItem.className = 'item-card';
 
+  const status = type === 'habit' ? getHabitStatus(item) : getTodoStatus(item);
+  if (status === 'done') {
+    listItem.classList.add('completed');
+  }
+
   const title = document.createElement('div');
   title.className = 'item-title';
   title.textContent = item.title;
 
-  const status = type === 'habit' ? getHabitStatus(item) : getTodoStatus(item);
-  if (status === 'done') {
-    title.classList.add('complete');
-  }
+  const headerRow = document.createElement('div');
+  headerRow.className = 'item-row item-top-row';
 
-  const meta = document.createElement('div');
-  meta.className = 'item-row';
-
-  const details = document.createElement('span');
-  if (type === 'habit') {
-    details.textContent = `${getRecurrenceLabel(item)} | Time: ${item.time}`;
-  } else {
-    details.textContent = item.recurrence === 'one-time'
+  const summary = document.createElement('span');
+  summary.className = 'item-time';
+  summary.textContent = type === 'habit'
+    ? item.time
+    : item.recurrence === 'one-time'
       ? item.dueDate ? `Due: ${item.dueDate}` : 'No due date'
       : getRecurrenceLabel(item);
-  }
 
-  const itemToggle = document.createElement('div');
-  itemToggle.className = 'item-toggle';
-
-  const completeCheckbox = document.createElement('input');
-  completeCheckbox.type = 'checkbox';
-  completeCheckbox.checked = item.completed;
-  completeCheckbox.className = 'item-complete-toggle';
-  completeCheckbox.addEventListener('click', (event) => {
-    event.stopPropagation();
-    toggleComplete(type, item.id);
-  });
-
-  const checkboxLabel = document.createElement('label');
-  checkboxLabel.textContent = item.completed ? 'Done' : 'Mark done';
-  checkboxLabel.className = 'item-toggle-label';
-
-  itemToggle.append(completeCheckbox, checkboxLabel);
+  const controlGroup = document.createElement('div');
+  controlGroup.className = 'item-head-right';
 
   const statusChip = document.createElement('span');
   statusChip.className = getStatusClass(status);
   statusChip.textContent = getStatusLabel(status);
 
+  const expandToggle = document.createElement('button');
+  expandToggle.type = 'button';
+  expandToggle.className = 'item-expand-toggle';
+  expandToggle.textContent = 'Details';
+  expandToggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    listItem.classList.toggle('expanded');
+  });
+
+  controlGroup.append(statusChip, expandToggle);
+  headerRow.append(title, summary, controlGroup);
+
+  const detailsSection = document.createElement('div');
+  detailsSection.className = 'item-details';
+
+  const detailText = document.createElement('span');
+  detailText.className = 'item-detail-text';
+  detailText.textContent = type === 'habit'
+    ? `${getRecurrenceLabel(item)} | Time: ${item.time}`
+    : item.recurrence === 'one-time'
+      ? item.dueDate ? `Due: ${item.dueDate}` : 'No due date'
+      : getRecurrenceLabel(item);
+
   const actions = document.createElement('div');
   actions.className = 'item-actions';
+
+  const completeButton = document.createElement('button');
+  completeButton.textContent = item.completed ? 'Undo' : 'Done';
+  completeButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleComplete(type, item.id);
+  });
 
   const deleteButton = document.createElement('button');
   deleteButton.textContent = 'Delete';
@@ -417,18 +431,19 @@ function createListItem(item, type) {
     removeItem(type, item.id);
   });
 
-  actions.append(deleteButton);
-  meta.append(details, statusChip, itemToggle, actions);
-  listItem.append(title, meta);
-
-  listItem.addEventListener('click', (event) => {
-    if (event.target.closest('.item-actions') || event.target.closest('button')) return;
-    toggleComplete(type, item.id);
-  });
+  actions.append(completeButton, deleteButton);
+  detailsSection.append(detailText, actions);
 
   if (type === 'habit') {
-    listItem.appendChild(renderProgressChart(item));
+    detailsSection.appendChild(renderProgressChart(item));
   }
+
+  listItem.append(headerRow, detailsSection);
+
+  listItem.addEventListener('click', (event) => {
+    if (event.target.closest('.item-expand-toggle') || event.target.closest('.item-actions') || event.target.closest('button')) return;
+    toggleComplete(type, item.id);
+  });
 
   return listItem;
 }

@@ -349,6 +349,7 @@ main > section:nth-of-type(3) {
 .item-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .item-actions button {
@@ -359,9 +360,57 @@ main > section:nth-of-type(3) {
   cursor: pointer;
 }
 
-.complete {
-  opacity: 0.72;
-  text-decoration: line-through;
+.item-top-row {
+  display: grid;
+  grid-template-columns: 1.5fr auto auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.item-time {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.item-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.item-expand-toggle {
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--primary);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.item-expand-toggle:hover {
+  background: #eff6ff;
+}
+
+.item-details {
+  display: none;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.item-card.expanded .item-details {
+  display: grid;
+}
+
+.item-detail-text {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.item-card.completed {
+  opacity: 0.75;
 }
 
 button.delete {
