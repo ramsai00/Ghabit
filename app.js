@@ -28,7 +28,9 @@ const todoRecurringControls = document.getElementById('todo-recurring-controls')
 const todoStartDateInput = document.getElementById('todo-start-date');
 const todoEndDateInput = document.getElementById('todo-end-date');
 const todoWeekdays = document.getElementById('todo-weekdays');
-const scheduleList = document.getElementById('schedule-list');
+const calendarGrid = document.getElementById('calendar-grid');
+const calendarLegend = document.getElementById('calendar-legend');
+const EVENT_COLOR_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#ef4444', '#0ea5e9', '#7c3aed'];
 
 const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -309,12 +311,28 @@ function renderLists() {
     todos.forEach((todo) => todoList.appendChild(createListItem(todo, 'todo')));
   }
 
-  renderSchedulePreview();
+  renderCalendar();
 }
 
-function renderSchedulePreview() {
-  if (!scheduleList) return;
-  scheduleList.innerHTML = '';
+function getEventColor(item) {
+  const seed = Array.from(item.id).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return EVENT_COLOR_PALETTE[seed % EVENT_COLOR_PALETTE.length];
+}
+
+function renderCalendar() {
+  if (!calendarGrid || !calendarLegend) return;
+
+  calendarGrid.innerHTML = '';
+  calendarLegend.innerHTML = '';
+
+  const items = [...habits.map((item) => ({ ...item, type: 'habit' })), ...todos.map((item) => ({ ...item, type: 'todo' }))];
+  const colorMap = new Map();
+  items.forEach((item) => {
+    if (!colorMap.has(item.id)) {
+      colorMap.set(item.id, getEventColor(item));
+    }
+  });
+
   const today = new Date();
   const daysToShow = 14;
 
@@ -324,44 +342,66 @@ function renderSchedulePreview() {
     const dateString = day.toISOString().slice(0, 10);
     const dayName = WEEKDAY_NAMES[day.getDay()];
 
-    const scheduledHabits = habits.filter((habit) => isScheduledOnDate(habit, dateString));
-    const scheduledTodos = todos.filter((todo) => isScheduledOnDate(todo, dateString));
-    if (scheduledHabits.length === 0 && scheduledTodos.length === 0) {
-      const emptyDay = document.createElement('li');
-      emptyDay.className = 'item-card';
-      emptyDay.textContent = `${dayName} ${dateString}: No scheduled items.`;
-      scheduleList.appendChild(emptyDay);
-      continue;
-    }
-
-    const dayCard = document.createElement('li');
-    dayCard.className = 'item-card';
+    const dayCell = document.createElement('div');
+    dayCell.className = 'calendar-day';
 
     const header = document.createElement('div');
-    header.className = 'item-row';
-    const title = document.createElement('strong');
-    title.textContent = `${dayName} ${dateString}`;
-    const count = document.createElement('span');
-    count.textContent = `${scheduledHabits.length + scheduledTodos.length} item${scheduledHabits.length + scheduledTodos.length === 1 ? '' : 's'}`;
-    header.append(title, count);
+    header.className = 'calendar-day-header';
+    const label = document.createElement('strong');
+    label.textContent = `${dayName}`;
+    const dateMeta = document.createElement('span');
+    dateMeta.className = 'calendar-day-date';
+    dateMeta.textContent = dateString;
+    header.append(label, dateMeta);
 
-    const list = document.createElement('div');
-    list.className = 'schedule-day-items';
+    const eventsContainer = document.createElement('div');
+    eventsContainer.className = 'calendar-events';
 
-    scheduledHabits.forEach((habit) => {
-      const itemLine = document.createElement('div');
-      itemLine.textContent = `Habit: ${habit.title} (${getRecurrenceLabel(habit)})`;
-      list.appendChild(itemLine);
+    const scheduledItems = items.filter((item) => isScheduledOnDate(item, dateString));
+    if (scheduledItems.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'calendar-empty';
+      empty.textContent = 'No events';
+      eventsContainer.appendChild(empty);
+    } else {
+      scheduledItems.forEach((item) => {
+        const eventLabel = document.createElement('div');
+        eventLabel.className = 'calendar-event';
+        eventLabel.style.backgroundColor = colorMap.get(item.id);
+        eventLabel.title = `${item.type === 'habit' ? 'Habit' : 'Todo'}: ${item.title}`;
+
+        const dot = document.createElement('span');
+        dot.className = 'calendar-event-dot';
+        dot.style.backgroundColor = 'rgba(255,255,255,0.85)';
+
+        const text = document.createElement('span');
+        const typeTag = item.type === 'habit' ? 'H' : 'T';
+        text.textContent = `${typeTag}: ${item.title}`;
+
+        eventLabel.append(dot, text);
+        eventsContainer.appendChild(eventLabel);
+      });
+    }
+
+    dayCell.append(header, eventsContainer);
+    calendarGrid.appendChild(dayCell);
+  }
+
+  if (items.length > 0) {
+    items.forEach((item) => {
+      const legendItem = document.createElement('div');
+      legendItem.className = 'calendar-legend-item';
+
+      const colorChip = document.createElement('span');
+      colorChip.className = 'calendar-color-chip';
+      colorChip.style.backgroundColor = colorMap.get(item.id);
+
+      const label = document.createElement('span');
+      label.textContent = `${item.type === 'habit' ? 'Habit' : 'Todo'}: ${item.title}`;
+
+      legendItem.append(colorChip, label);
+      calendarLegend.appendChild(legendItem);
     });
-
-    scheduledTodos.forEach((todo) => {
-      const itemLine = document.createElement('div');
-      itemLine.textContent = `Todo: ${todo.title} (${getRecurrenceLabel(todo)})`;
-      list.appendChild(itemLine);
-    });
-
-    dayCard.append(header, list);
-    scheduleList.appendChild(dayCard);
   }
 }
 
