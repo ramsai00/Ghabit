@@ -239,6 +239,7 @@ function getHabitStatus(habit) {
   const today = getToday();
   if (!isScheduledOnDate(habit, today)) return 'upcoming';
   if (habit.lastCompletedDate === today) return 'done';
+  if (habit.lastFailedDate === getYesterday()) return 'missed';
   return 'today';
 }
 
@@ -484,7 +485,7 @@ function getTodayItems() {
     ...todos.map((item) => ({ ...item, type: 'todo' })),
   ].filter((item) => {
     const status = item.type === 'habit' ? getHabitStatus(item) : getTodoStatus(item);
-    return status === 'today' || status === 'done';
+    return status === 'today' || status === 'done' || status === 'missed';
   }).sort((a, b) => {
     if (a.type !== b.type) return a.type === 'habit' ? -1 : 1;
     if (a.type === 'habit') return a.time.localeCompare(b.time);
@@ -517,7 +518,7 @@ function renderSummary() {
   dashboardSummary.innerHTML = '';
 
   const today = getToday();
-  const todayPending = habits.filter((habit) => getHabitStatus(habit) === 'today').length
+  const todayPending = habits.filter((habit) => ['today', 'missed'].includes(getHabitStatus(habit))).length
     + todos.filter((todo) => getTodoStatus(todo) === 'today').length;
   const completedToday = habits.filter((habit) => habit.lastCompletedDate === today).length
     + todos.filter((todo) => todo.lastCompletedDate === today).length;
