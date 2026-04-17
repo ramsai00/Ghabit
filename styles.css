@@ -138,6 +138,36 @@ button.delete {
   margin-bottom: 20px;
 }
 
+.hint {
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+}
+
+.hint-row {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.small-button {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  color: var(--text);
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  max-width: fit-content;
+}
+
+.small-button:hover {
+  background: #f3f4f6;
+}
+
 .status-chip {
   display: inline-flex;
   align-items: center;

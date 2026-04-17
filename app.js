@@ -7,11 +7,14 @@ const todoForm = document.getElementById('todo-form');
 const habitList = document.getElementById('habit-list');
 const todoList = document.getElementById('todo-list');
 const reminderBanner = document.getElementById('reminder-banner');
+const notificationStatus = document.getElementById('notification-status');
+const notificationTestButton = document.getElementById('notification-test-button');
 const habitTitleInput = document.getElementById('habit-title');
 const habitTimeInput = document.getElementById('habit-time');
 const todoTitleInput = document.getElementById('todo-title');
 const todoDateInput = document.getElementById('todo-date');
 
+const notificationsSupported = 'Notification' in window;
 let habits = [];
 let todos = [];
 let notifiedActiveHabits = {};
@@ -177,6 +180,7 @@ function addHabit(title, time) {
     completed: false,
     lastCompletedDate: '',
     lastFailedDate: '',
+    createdDate: getToday(),
   };
   habits.push(newHabit);
   saveData();
@@ -228,29 +232,90 @@ function removeItem(type, id) {
   updateReminderBanner();
 }
 
-function askNotificationPermission() {
-  if (!('Notification' in window)) {
+function updateNotificationStatus() {
+  if (!notificationsSupported) {
+    notificationStatus.textContent = 'Browser notifications are not supported in this browser.';
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    notificationStatus.textContent = 'Notifications enabled. You will receive habit reminders when a habit becomes active.';
+  } else if (Notification.permission === 'denied') {
+    notificationStatus.textContent = 'Notifications denied. Enable browser notifications in your browser settings to receive reminders.';
+  } else {
+    notificationStatus.textContent = 'Notification permission is not granted yet. Allow notifications to receive habit reminders.';
+  }
+}
+
+function askNotificationPermission(callback) {
+  if (!notificationsSupported) {
+    updateNotificationStatus();
     return;
   }
 
   if (Notification.permission === 'default') {
-    Notification.requestPermission();
+    notificationStatus.textContent = 'Requesting notification permission...';
+    const request = Notification.requestPermission((permission) => {
+      updateNotificationStatus();
+      if (Notification.permission === 'granted' && typeof callback === 'function') {
+        callback();
+      }
+    });
+    if (request && request.then) {
+      request.then(() => {
+        updateNotificationStatus();
+        if (Notification.permission === 'granted' && typeof callback === 'function') {
+          callback();
+        }
+      });
+    }
+  } else {
+    updateNotificationStatus();
+    if (Notification.permission === 'granted' && typeof callback === 'function') {
+      callback();
+    }
   }
 }
 
 function sendBrowserNotification(title, body) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
+  if (!notificationsSupported) {
+    notificationStatus.textContent = 'Notifications are not supported by this browser.';
+    return;
+  }
+
+  if (Notification.permission !== 'granted') {
+    notificationStatus.textContent = `Notification permission is ${Notification.permission}.`;
     return;
   }
 
   try {
     new Notification(title, { body, silent: false });
+    notificationStatus.textContent = 'Test notification sent. Check your OS/browser notification area.';
   } catch (error) {
-    // ignore notifications if blocked or unavailable
+    notificationStatus.textContent = `Notification failed: ${error.message}`;
   }
 }
 
+function sendTestNotification() {
+  if (!notificationsSupported) {
+    notificationStatus.textContent = 'Notifications are not supported by this browser.';
+    return;
+  }
+
+  if (Notification.permission !== 'granted') {
+    askNotificationPermission(() => {
+      sendBrowserNotification('Ghabit notification test', 'This is a test reminder from Ghabit.');
+    });
+    return;
+  }
+
+  sendBrowserNotification('Ghabit notification test', 'This is a test reminder from Ghabit.');
+}
+
 function checkForActiveHabits() {
+  if (notificationsSupported && Notification.permission === 'default') {
+    askNotificationPermission();
+  }
   const today = getToday();
   const activeHabits = habits.filter((habit) => getHabitStatus(habit) === 'active');
 
@@ -340,6 +405,8 @@ window.addEventListener('DOMContentLoaded', () => {
   updateFailedHabits();
   updateReminderBanner();
   checkForActiveHabits();
+
+  notificationTestButton.addEventListener('click', sendTestNotification);
 
   setInterval(() => {
     renderLists();
