@@ -30,6 +30,7 @@ const todoEndDateInput = document.getElementById('todo-end-date');
 const todoWeekdays = document.getElementById('todo-weekdays');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarLegend = document.getElementById('calendar-legend');
+const dashboardSummary = document.getElementById('dashboard-summary');
 const EVENT_COLOR_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#ef4444', '#0ea5e9', '#7c3aed'];
 const PROGRESS_DAYS = 7;
 
@@ -391,6 +392,7 @@ function createListItem(item, type) {
 function renderLists() {
   habitList.innerHTML = '';
   todoList.innerHTML = '';
+  renderSummary();
 
   if (habits.length === 0) {
     const empty = document.createElement('li');
@@ -411,6 +413,39 @@ function renderLists() {
   }
 
   renderCalendar();
+}
+
+function renderSummary() {
+  if (!dashboardSummary) return;
+  dashboardSummary.innerHTML = '';
+
+  const today = getToday();
+  const activeHabits = habits.filter((habit) => getHabitStatus(habit) === 'active').length;
+  const dueTodos = todos.filter((todo) => getTodoStatus(todo) === 'active').length;
+  const scheduledToday = habits.filter((habit) => isScheduledOnDate(habit, today)).length
+    + todos.filter((todo) => isScheduledOnDate(todo, today)).length;
+  const completedToday = habits.filter((habit) => habit.lastCompletedDate === today).length
+    + todos.filter((todo) => todo.lastCompletedDate === today).length;
+
+  const cards = [
+    { label: 'Total habits', value: habits.length, caption: 'Habits tracked' },
+    { label: 'Active now', value: activeHabits, caption: 'Habits due today' },
+    { label: 'Todos due', value: dueTodos, caption: 'Tasks due today' },
+    { label: 'Completed today', value: completedToday, caption: 'Today marked done' },
+  ];
+
+  cards.forEach((card) => {
+    const cardElement = document.createElement('div');
+    cardElement.className = 'dashboard-summary-card';
+    const value = document.createElement('strong');
+    value.textContent = card.value;
+    const label = document.createElement('span');
+    label.textContent = card.label;
+    const caption = document.createElement('span');
+    caption.textContent = card.caption;
+    cardElement.append(value, label, caption);
+    dashboardSummary.appendChild(cardElement);
+  });
 }
 
 function getEventColor(item) {

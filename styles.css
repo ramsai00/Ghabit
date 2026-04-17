@@ -52,6 +52,23 @@ main {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
+  min-width: 0;
+}
+
+main > section:nth-of-type(2) {
+  position: static;
+}
+
+main > section:nth-of-type(3) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 760px) {
+  main > section:nth-of-type(2) {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
 }
 
 .panel-header {
@@ -349,6 +366,38 @@ button.delete {
   margin-bottom: 20px;
 }
 
+.dashboard-summary {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.dashboard-summary-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  display: grid;
+  gap: 6px;
+  min-height: 96px;
+}
+
+.dashboard-summary-card strong {
+  font-size: 1.35rem;
+  display: block;
+}
+
+.dashboard-summary-card span {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+@media (min-width: 760px) {
+  .dashboard-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .local-alert {
   background: #fef9c3;
   color: #92400e;
@@ -421,14 +470,27 @@ button.delete {
   font-weight: 600;
 }
 
+.item-card {
+  margin-bottom: 16px;
+}
+
+.item-row {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.item-actions {
+  justify-content: flex-end;
+}
+
 @media (min-width: 760px) {
   main {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1.8fr) minmax(260px, 340px);
   }
 }
 
 @media (min-width: 1080px) {
   main {
-    grid-template-columns: minmax(0, 2fr) minmax(300px, 360px);
+    grid-template-columns: minmax(0, 2.4fr) minmax(300px, 360px);
   }
 }

@@ -30,9 +30,9 @@ Then:
 
 ## Notes
 
-- The app can now use a real SQLite backend when run with `npm start`.
-- If the backend is unavailable, the app will fall back to browser `localStorage`.
+- When you run the app with `npm start`, it uses the Express backend and persists data in SQLite.
 - Backend data is stored in `data/ghabit.db`.
+- If the backend is unavailable, the app will fall back to browser `localStorage` for local-only storage.
 
 ## Prevent accidental push to main
 
