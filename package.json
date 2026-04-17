@@ -1,0 +1,13 @@
+{
+  "name": "ghabit",
+  "version": "0.1.0",
+  "description": "Ghabit habit tracker with an Express + SQLite backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.4",
+    "sqlite3": "^5.1.6"
+  }
+}

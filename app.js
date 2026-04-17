@@ -49,15 +49,29 @@ function getYesterday() {
   return date.toISOString().slice(0, 10);
 }
 
-function loadData() {
+async function loadData() {
   try {
-    habits = JSON.parse(localStorage.getItem(HABIT_STORAGE_KEY)) || [];
-    todos = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY)) || [];
+    const response = await fetch('/api/data');
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+    const data = await response.json();
+    habits = data.habits || [];
+    todos = data.todos || [];
     notifiedActiveHabits = JSON.parse(localStorage.getItem(NOTIFIED_STORAGE_KEY)) || {};
+    localStorage.setItem(HABIT_STORAGE_KEY, JSON.stringify(habits));
+    localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
   } catch (error) {
-    habits = [];
-    todos = [];
-    notifiedActiveHabits = {};
+    try {
+      habits = JSON.parse(localStorage.getItem(HABIT_STORAGE_KEY)) || [];
+      todos = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY)) || [];
+      notifiedActiveHabits = JSON.parse(localStorage.getItem(NOTIFIED_STORAGE_KEY)) || {};
+    } catch (storageError) {
+      habits = [];
+      todos = [];
+      notifiedActiveHabits = {};
+    }
+    console.warn('Unable to load backend data, falling back to localStorage.', error);
   }
 
   habits = habits.map((habit) => ({
@@ -89,6 +103,22 @@ function saveData() {
   localStorage.setItem(HABIT_STORAGE_KEY, JSON.stringify(habits));
   localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todos));
   localStorage.setItem(NOTIFIED_STORAGE_KEY, JSON.stringify(notifiedActiveHabits));
+  syncDataToBackend();
+}
+
+async function syncDataToBackend() {
+  try {
+    const response = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ habits, todos }),
+    });
+    if (!response.ok) {
+      console.warn('Backend sync failed with status', response.status);
+    }
+  } catch (error) {
+    console.warn('Backend sync failed:', error);
+  }
 }
 
 function parseHabitTime(habit) {
@@ -679,8 +709,8 @@ todoForm.addEventListener('submit', (event) => {
   updateTodoRecurrenceControls();
 });
 
-window.addEventListener('DOMContentLoaded', () => {
-  loadData();
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadData();
   askNotificationPermission();
   renderLists();
   updateFailedHabits();
