@@ -235,12 +235,53 @@ function isScheduledOnDate(item, dateString = getToday()) {
   return false;
 }
 
+function getNextScheduledDate(item, startDate) {
+  const start = new Date(startDate);
+  const limit = new Date(start);
+  limit.setDate(limit.getDate() + 30);
+
+  if (item.recurrence === 'one-time') {
+    if (item.dueDate && item.dueDate > startDate) return item.dueDate;
+    return null;
+  }
+
+  const cursor = new Date(start);
+  cursor.setDate(cursor.getDate() + 1);
+
+  while (cursor <= limit) {
+    const dateString = cursor.toISOString().slice(0, 10);
+    if (isScheduledOnDate(item, dateString)) {
+      return dateString;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return null;
+}
+
+function formatStatusText(status) {
+  const [base, date] = status.split(':');
+  if (base === 'today') return 'Today';
+  if (base === 'tomorrow') return 'Tomorrow';
+  if (base === 'future' && date) {
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  if (base === 'done') return 'Done';
+  if (base === 'missed') return 'Missed';
+  if (base === 'pending') return 'Pending';
+  return 'Upcoming';
+}
+
 function getHabitStatus(habit) {
   const today = getToday();
-  if (!isScheduledOnDate(habit, today)) return 'upcoming';
   if (habit.lastCompletedDate === today) return 'done';
   if (habit.lastFailedDate === getYesterday()) return 'missed';
-  return 'today';
+  if (isScheduledOnDate(habit, today)) return 'today';
+
+  const nextDate = getNextScheduledDate(habit, today);
+  if (!nextDate) return 'upcoming';
+  if (nextDate === getTomorrow()) return 'tomorrow';
+  return `future:${nextDate}`;
 }
 
 function getTodoStatus(todo) {
@@ -248,15 +289,22 @@ function getTodoStatus(todo) {
 
   if (todo.recurrence === 'one-time') {
     if (todo.completed) return 'done';
-    if (!todo.dueDate) return 'upcoming';
-    if (today < todo.dueDate) return 'upcoming';
+    if (!todo.dueDate) return 'pending';
     if (today === todo.dueDate) return 'today';
+    if (today < todo.dueDate) {
+      if (todo.dueDate === getTomorrow()) return 'tomorrow';
+      return `future:${todo.dueDate}`;
+    }
     return 'missed';
   }
 
-  if (!isScheduledOnDate(todo, today)) return 'upcoming';
   if (todo.lastCompletedDate === today) return 'done';
-  return 'today';
+  if (isScheduledOnDate(todo, today)) return 'today';
+
+  const nextDate = getNextScheduledDate(todo, today);
+  if (!nextDate) return 'upcoming';
+  if (nextDate === getTomorrow()) return 'tomorrow';
+  return `future:${nextDate}`;
 }
 
 function getRecurrenceLabel(item) {
@@ -276,27 +324,12 @@ function getRecurrenceLabel(item) {
 }
 
 function getStatusLabel(status) {
-  switch (status) {
-    case 'done':
-      return 'Done';
-    case 'today':
-    case 'active':
-      return 'Today';
-    case 'upcoming':
-      return 'Upcoming';
-    case 'missed':
-      return 'Missed';
-    case 'pending':
-      return 'Pending';
-    case 'inactive':
-      return 'Upcoming';
-    default:
-      return 'Unknown';
-  }
+  return formatStatusText(status);
 }
 
 function getStatusClass(status) {
-  return `status-chip status-${status}`;
+  const base = status.split(':')[0];
+  return `status-chip status-${base}`;
 }
 
 function getHabitProgressData(habit) {
@@ -370,12 +403,21 @@ function createListItem(item, type) {
     listItem.classList.add('completed');
   }
 
+  const headerRow = document.createElement('div');
+  headerRow.className = 'item-row item-top-row';
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = 'item-checkbox';
+  checkbox.checked = status === 'done';
+  checkbox.addEventListener('change', (event) => {
+    event.stopPropagation();
+    toggleComplete(type, item.id);
+  });
+
   const title = document.createElement('div');
   title.className = 'item-title';
   title.textContent = item.title;
-
-  const headerRow = document.createElement('div');
-  headerRow.className = 'item-row item-top-row';
 
   const summary = document.createElement('span');
   summary.className = 'item-time';
@@ -385,24 +427,11 @@ function createListItem(item, type) {
       ? item.dueDate ? `Due: ${item.dueDate}` : 'No due date'
       : getRecurrenceLabel(item);
 
-  const controlGroup = document.createElement('div');
-  controlGroup.className = 'item-head-right';
-
   const statusChip = document.createElement('span');
   statusChip.className = getStatusClass(status);
   statusChip.textContent = getStatusLabel(status);
 
-  const expandToggle = document.createElement('button');
-  expandToggle.type = 'button';
-  expandToggle.className = 'item-expand-toggle';
-  expandToggle.textContent = 'Details';
-  expandToggle.addEventListener('click', (event) => {
-    event.stopPropagation();
-    listItem.classList.toggle('expanded');
-  });
-
-  controlGroup.append(statusChip, expandToggle);
-  headerRow.append(title, summary, controlGroup);
+  headerRow.append(checkbox, title, summary, statusChip);
 
   const detailsSection = document.createElement('div');
   detailsSection.className = 'item-details';
@@ -418,13 +447,6 @@ function createListItem(item, type) {
   const actions = document.createElement('div');
   actions.className = 'item-actions';
 
-  const completeButton = document.createElement('button');
-  completeButton.textContent = item.completed ? 'Undo' : 'Done';
-  completeButton.addEventListener('click', (event) => {
-    event.stopPropagation();
-    toggleComplete(type, item.id);
-  });
-
   const deleteButton = document.createElement('button');
   deleteButton.textContent = 'Delete';
   deleteButton.className = 'delete';
@@ -433,7 +455,7 @@ function createListItem(item, type) {
     removeItem(type, item.id);
   });
 
-  actions.append(completeButton, deleteButton);
+  actions.append(deleteButton);
   detailsSection.append(detailText, actions);
 
   if (type === 'habit') {
@@ -442,9 +464,9 @@ function createListItem(item, type) {
 
   listItem.append(headerRow, detailsSection);
 
-  listItem.addEventListener('click', (event) => {
-    if (event.target.closest('.item-expand-toggle') || event.target.closest('.item-actions') || event.target.closest('button')) return;
-    toggleComplete(type, item.id);
+  headerRow.addEventListener('click', (event) => {
+    if (event.target.closest('.item-checkbox') || event.target.closest('.item-actions') || event.target.closest('button')) return;
+    listItem.classList.toggle('expanded');
   });
 
   return listItem;
@@ -455,22 +477,32 @@ function renderLists() {
   todoList.innerHTML = '';
   renderSummary();
 
-  if (habits.length === 0) {
+  const visibleHabits = habits.filter((habit) => {
+    const status = getHabitStatus(habit);
+    return status !== 'today' && status !== 'done' && status !== 'missed';
+  });
+
+  if (visibleHabits.length === 0) {
     const empty = document.createElement('li');
     empty.className = 'item-card';
     empty.textContent = 'Add a habit to get started.';
     habitList.appendChild(empty);
   } else {
-    habits.forEach((habit) => habitList.appendChild(createListItem(habit, 'habit')));
+    visibleHabits.forEach((habit) => habitList.appendChild(createListItem(habit, 'habit')));
   }
 
-  if (todos.length === 0) {
+  const visibleTodos = todos.filter((todo) => {
+    const status = getTodoStatus(todo);
+    return status !== 'today' && status !== 'done' && status !== 'missed';
+  });
+
+  if (visibleTodos.length === 0) {
     const empty = document.createElement('li');
     empty.className = 'item-card';
     empty.textContent = 'Add a todo task for one-time items.';
     todoList.appendChild(empty);
   } else {
-    todos.forEach((todo) => todoList.appendChild(createListItem(todo, 'todo')));
+    visibleTodos.forEach((todo) => todoList.appendChild(createListItem(todo, 'todo')));
   }
 
   renderTodayList();

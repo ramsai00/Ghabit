@@ -55,8 +55,15 @@ main {
   min-width: 0;
 }
 
-main > section:nth-of-type(2) {
-  position: static;
+main > section:nth-of-type(2),
+main > section:nth-of-type(3) {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+main > section:nth-of-type(2):hover,
+main > section:nth-of-type(3):hover {
+  opacity: 1;
 }
 
 main > section:nth-of-type(3) {
@@ -362,9 +369,16 @@ main > section:nth-of-type(3) {
 
 .item-top-row {
   display: grid;
-  grid-template-columns: 1.5fr auto auto;
+  grid-template-columns: auto 1fr auto auto;
   gap: 12px;
   align-items: center;
+}
+
+.item-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 
 .item-time {
@@ -619,6 +633,16 @@ button.delete {
 .status-inactive {
   background: #f3f4f6;
   color: #475569;
+}
+
+.status-tomorrow {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-future {
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
 .item-title {
