@@ -1,5 +1,12 @@
 # Release Notes
 
+## 0.1.3 - 2026-04-18
+- Fixed today section to be actionable with instant checkbox completion and subtle animations.
+- Reduced cognitive overload by filtering today/missed items from recurring habits and todo lists.
+- Simplified habit cards to collapsed view with row-click expansion for details.
+- Replaced vague "Upcoming" status with specific dates like "Tomorrow" or "Apr 20".
+- Faded lower sections to prioritize today-first focus.
+
 ## 0.1.2 - 2026-04-18
 - Added Express + SQLite backend persistence.
 - Added dashboard summary metrics for total habits, active tasks, todos due, and completed today.

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-04-18
+### Fixed
+- Today section now actionable with instant checkbox completion and animations.
+- Reduced information duplication by filtering today/missed items from lower lists.
+- Simplified habit cards to collapsed view with row-click expansion.
+- Replaced vague "Upcoming" with specific dates like "Tomorrow" or "Apr 20".
+- Faded lower sections to emphasize today-first focus.
+
 ## [0.1.2] - 2026-04-18
 ### Added
 - Express + SQLite backend persistence.
