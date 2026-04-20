@@ -33,6 +33,7 @@ const calendarGrid = document.getElementById('calendar-grid');
 const calendarLegend = document.getElementById('calendar-legend');
 const reminderIndicator = document.getElementById('reminder-indicator');
 const todayList = document.getElementById('today-list');
+const quickAddInput = document.getElementById('quick-add-input');
 const ACTIVITY_STORAGE_KEY = 'ghabit.activity';
 const dashboardSummary = document.getElementById('dashboard-summary');
 const EVENT_COLOR_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#ef4444', '#0ea5e9', '#7c3aed'];
@@ -269,6 +270,8 @@ function formatStatusText(status) {
   if (base === 'done') return 'Done';
   if (base === 'missed') return 'Missed';
   if (base === 'pending') return 'Pending';
+  if (base === 'due-now') return 'Due now';
+  if (base === 'late') return 'Late';
   return 'Upcoming';
 }
 
@@ -276,7 +279,16 @@ function getHabitStatus(habit) {
   const today = getToday();
   if (habit.lastCompletedDate === today) return 'done';
   if (habit.lastFailedDate === getYesterday()) return 'missed';
-  if (isScheduledOnDate(habit, today)) return 'today';
+  if (isScheduledOnDate(habit, today)) {
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const [hours, minutes] = habit.time.split(':').map(Number);
+    const habitTime = hours * 60 + minutes;
+    if (currentTime >= habitTime) {
+      return currentTime > habitTime + 60 ? 'late' : 'due-now'; // Late if more than 1 hour past
+    }
+    return 'today';
+  }
 
   const nextDate = getNextScheduledDate(habit, today);
   if (!nextDate) return 'upcoming';
@@ -517,7 +529,7 @@ function getTodayItems() {
     ...todos.map((item) => ({ ...item, type: 'todo' })),
   ].filter((item) => {
     const status = item.type === 'habit' ? getHabitStatus(item) : getTodoStatus(item);
-    return status === 'today' || status === 'done' || status === 'missed';
+    return ['today', 'due-now', 'late', 'done', 'missed'].includes(status);
   }).sort((a, b) => {
     if (a.type !== b.type) return a.type === 'habit' ? -1 : 1;
     if (a.type === 'habit') return a.time.localeCompare(b.time);
@@ -550,14 +562,13 @@ function renderSummary() {
   dashboardSummary.innerHTML = '';
 
   const today = getToday();
-  const todayPending = habits.filter((habit) => ['today', 'missed'].includes(getHabitStatus(habit))).length
+  const scheduledToday = habits.filter((habit) => isScheduledOnDate(habit, today)).length
     + todos.filter((todo) => getTodoStatus(todo) === 'today').length;
   const completedToday = habits.filter((habit) => habit.lastCompletedDate === today).length
     + todos.filter((todo) => todo.lastCompletedDate === today).length;
 
   const cards = [
-    { label: 'Today pending', value: todayPending, caption: 'Items scheduled for today' },
-    { label: 'Done today', value: completedToday, caption: 'Completed items' },
+    { label: 'Completed today', value: `${completedToday}/${scheduledToday}`, caption: 'Progress on scheduled items' },
   ];
 
   cards.forEach((card) => {
@@ -709,6 +720,26 @@ function addTodo(title, dueDate) {
   };
   todos.push(newTodo);
   addActivity(`Added todo: ${title}`);
+  saveData();
+  renderLists();
+  updateReminderIndicator();
+}
+
+function addQuickTodo(title) {
+  const newTodo = {
+    id: `t-${Date.now()}`,
+    title: title.trim(),
+    recurrence: 'one-time',
+    days: [],
+    intervalDays: 0,
+    dueDate: getToday(),
+    startDate: getToday(),
+    endDate: '',
+    completed: false,
+    lastCompletedDate: '',
+  };
+  todos.push(newTodo);
+  addActivity(`Quick added todo: ${title}`);
   saveData();
   renderLists();
   updateReminderIndicator();
@@ -1016,6 +1047,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   notificationTestButton.addEventListener('click', sendTestNotification);
   habitRecurrenceSelect.addEventListener('change', updateHabitRecurrenceControls);
   todoRecurrenceSelect.addEventListener('change', updateTodoRecurrenceControls);
+
+  quickAddInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && quickAddInput.value.trim()) {
+      addQuickTodo(quickAddInput.value.trim());
+      quickAddInput.value = '';
+    }
+  });
 
   updateHabitRecurrenceControls();
   updateTodoRecurrenceControls();
