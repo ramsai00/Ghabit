@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ghabit Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>Ghabit Tracker</h1>
+      <p>Track daily habits like applying cream and occasional todo tasks like salon visits.</p>
+    </header>
+
+    <div id="reminder-banner" class="banner"></div>
+    <div class="hint-row">
+      <div id="notification-status" class="hint"></div>
+      <button id="notification-test-button" class="small-button" type="button">Test notification</button>
+    </div>
+    <div id="reminder-indicator" class="reminder-indicator"></div>
+    <div id="local-alert" class="local-alert" aria-live="polite"></div>
+    <div id="dashboard-summary" class="dashboard-summary"></div>
+    <section id="today-panel" class="panel">
+      <div class="panel-header">
+        <h2>Today</h2>
+      </div>
+      <div class="quick-add">
+        <input type="text" id="quick-add-input" placeholder="+ Add task..." />
+      </div>
+      <ul id="today-list" class="item-list"></ul>
+    </section>
+
+    <main>
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Recurring Habits</h2>
+        </div>
+        <form id="habit-form" class="item-form">
+          <input type="text" id="habit-title" placeholder="Habit name (e.g. apply ace cream)" required />
+          <input type="time" id="habit-time" required />
+          <label class="field-row">
+            <span>Recurrence</span>
+            <select id="habit-recurrence">
+              <option value="daily">Every day</option>
+              <option value="interval">Every X days</option>
+              <option value="weekends">Weekends only</option>
+              <option value="weekly">Selected days</option>
+              <option value="one-time">One-time</option>
+            </select>
+          </label>
+          <div id="habit-interval-controls" class="hidden field-row">
+            <label><span>Repeat every</span><input type="number" id="habit-interval-days" min="2" placeholder="Days" /></label>
+          </div>
+          <div id="habit-weekdays" class="weekday-picker hidden">
+            <label><input type="checkbox" value="Sun" /> Sun</label>
+            <label><input type="checkbox" value="Mon" /> Mon</label>
+            <label><input type="checkbox" value="Tue" /> Tue</label>
+            <label><input type="checkbox" value="Wed" /> Wed</label>
+            <label><input type="checkbox" value="Thu" /> Thu</label>
+            <label><input type="checkbox" value="Fri" /> Fri</label>
+            <label><input type="checkbox" value="Sat" /> Sat</label>
+          </div>
+          <div class="date-row">
+            <input type="date" id="habit-start-date" />
+            <input type="date" id="habit-end-date" />
+          </div>
+          <button type="submit">Add Habit</button>
+        </form>
+        <ul id="habit-list" class="item-list"></ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Todo Tasks</h2>
+        </div>
+        <form id="todo-form" class="item-form">
+          <input type="text" id="todo-title" placeholder="Task name (e.g. visit salon)" required />
+          <label class="field-row">
+            <span>Recurrence</span>
+            <select id="todo-recurrence">
+              <option value="one-time">One-time</option>
+              <option value="daily">Every day</option>
+              <option value="interval">Every X days</option>
+              <option value="weekends">Weekends only</option>
+              <option value="weekly">Selected days</option>
+            </select>
+          </label>
+          <div id="todo-interval-controls" class="hidden field-row">
+            <label><span>Repeat every</span><input type="number" id="todo-interval-days" min="2" placeholder="Days" /></label>
+          </div>
+          <div id="todo-one-time-controls">
+            <input type="date" id="todo-date" />
+          </div>
+          <div id="todo-recurring-controls" class="hidden">
+            <div class="date-row">
+              <input type="date" id="todo-start-date" />
+              <input type="date" id="todo-end-date" />
+            </div>
+            <div id="todo-weekdays" class="weekday-picker hidden">
+              <label><input type="checkbox" value="Sun" /> Sun</label>
+              <label><input type="checkbox" value="Mon" /> Mon</label>
+              <label><input type="checkbox" value="Tue" /> Tue</label>
+              <label><input type="checkbox" value="Wed" /> Wed</label>
+              <label><input type="checkbox" value="Thu" /> Thu</label>
+              <label><input type="checkbox" value="Fri" /> Fri</label>
+              <label><input type="checkbox" value="Sat" /> Sat</label>
+            </div>
+          </div>
+          <button type="submit">Add Todo</button>
+        </form>
+        <ul id="todo-list" class="item-list"></ul>
+        <div id="activity-log" class="activity-log">
+          <div class="activity-log-header">
+            <h3>Recent activity</h3>
+          </div>
+          <ul id="activity-list" class="activity-list"></ul>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Calendar</h2>
+        </div>
+        <div id="calendar-grid" class="calendar-grid"></div>
+        <div id="calendar-legend" class="calendar-legend"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Runs with Express + SQLite backend when available, with local storage fallback.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

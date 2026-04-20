@@ -1,0 +1,6 @@
+{
+  "appId": "com.ghabit.app",
+  "appName": "Ghabit Tracker",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}

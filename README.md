@@ -28,6 +28,17 @@ Then:
 5. Use the calendar panel to see the next 14 days of scheduled habits and tasks.
 6. Mark items complete or delete them.
 
+## Build for Android
+1. Make sure you have Android Studio installed and Android SDK configured.
+2. Open Terminal and run:
+   - `cd /Users/ramsai001/Ghabit`
+   - `npm install`
+   - `npm run android`
+3. This will copy the web app into `www/`, sync Capacitor, and open the Android project.
+4. In Android Studio, run the app on an emulator or connected device.
+
+> The Android app uses local app storage by default, so it works offline. If you want backend sync, run `npm start` and use a hosted backend URL.
+
 ## Notes
 
 - When you run the app with `npm start`, it uses the Express backend and persists data in SQLite.

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ghabit Tracker</string>
+    <string name="title_activity_main">Ghabit Tracker</string>
+    <string name="package_name">com.ghabit.app</string>
+    <string name="custom_url_scheme">com.ghabit.app</string>
+</resources>
